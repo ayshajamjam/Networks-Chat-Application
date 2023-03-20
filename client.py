@@ -4,6 +4,7 @@ import threading
 import sys
 import ipaddress
 import json
+import time
 
 local_table = {}
 current_group = ""
@@ -30,8 +31,7 @@ def clientListen(port):
         header = lines[1]
         if(header == 'ack'):
             message = lines[3]
-            print("ack recieved")
-            print(">>> " + message)
+            print("ack recieved " + ">>> " + message)
         elif(header == 'update'):
             # update current client's table to match the server
             payload = lines[3]
@@ -39,6 +39,25 @@ def clientListen(port):
             global local_table
             local_table = dict
             print(">>> [Client table updated.]")
+        elif(header == 'send'):
+            original_sender_name = lines[3]
+            recipient_name = lines[5]
+            original_sender_ip = lines[7]
+            original_sender_port = int(lines[9])
+            message = lines[11]
+            
+            if(current_group != ""):    # Case: sending user is in a group chat
+                # Store private messages in a list
+                print("RECIEVED PRIVATE MESSAGE WHILE IN GC; exit to see")
+                private_messages.append(str(original_sender_name + ": " + message))
+            else:                       # Case: sending user is NOT in a group chat
+                print(original_sender_name + ": " + message)
+
+            ack = "Header:\nack\nMessage:\n[Message received by {}.]".format(recipient_name)
+            listen_socket.sendto(ack.encode(), (original_sender_ip, original_sender_port))
+            print(">>>Sent the ack\n\n")
+
+
 
 def clientMode(user_name, server_ip, server_port, client_port):
 
@@ -80,9 +99,29 @@ def clientMode(user_name, server_ip, server_port, client_port):
             print("\n>>>Invalid input")
             continue
     
-        if header == "dereg":   # notified leave
-            # Verify target user name exists
+        # if header == "dereg":   # notified leave
+        #     # Verify target user name exists
+        #     target_user_name = input_list[1]
+
+        #     target_ip = ""
+        #     target_port = ""
+        #     for indx in local_table:
+        #         if local_table[indx]['name'] == target_user_name:
+        #             target_ip = local_table[indx]['ip']
+        #             target_port = str(local_table[indx]['port'])
+
+        #     if (target_ip == "" and target_port == ""):
+        #         print(">>>Incorrect username provided")
+        #         continue
+
+        #     to_send = "header:\n" + header + "\nport:\n" + str(target_port)
+        #     client_socket.sendto(to_send.encode(), (server_ip, server_port))
+        #     print(">>> deregistration request sent: notified leave")
+        #     sys.exit(0) # Client can no longer type inputs
+        if header == "send":
+            client_ip = '127.0.0.1'
             target_user_name = input_list[1]
+
             target_ip = ""
             target_port = ""
             for indx in local_table:
@@ -90,11 +129,18 @@ def clientMode(user_name, server_ip, server_port, client_port):
                     target_ip = local_table[indx]['ip']
                     target_port = str(local_table[indx]['port'])
 
+            # Verify target user name exists
             if (target_ip == "" and target_port == ""):
-                print(">>>Incorrect username provided")
+                print(">>> Incorrect username provided")
                 continue
 
-            to_send = "header:\n" + header + "\nport:\n" + str(target_port)
-            client_socket.sendto(to_send.encode(), (server_ip, server_port))
-            print(">>> deregistration request sent: notified leave")
-            sys.exit(0) # Client can no longer type inputs
+            # Construct message
+            message = ""
+            for i in range(2, len(input_list)):
+                message = message + input_list[i] + " "
+            to_send = "header:\n" + header + "\ncurrent_user:\n" + user_name + "\nname\n" + target_user_name + "\nip\n" + str(client_ip) + "\nport:\n" + str(client_port) + "\nmessage:\n" + message
+
+            # Send message to target client
+            client_socket.sendto(to_send.encode(), (target_ip, int(target_port)))
+            print(">>> Message sent")
+            time.sleep(.5)
