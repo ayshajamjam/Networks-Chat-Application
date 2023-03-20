@@ -8,6 +8,8 @@ import json
 global server_table
 server_table = {}
 
+group_list = {}
+
 # Server response when there is a new registering client (ACK + updated table)
 def serverRegister(server_socket, target_addr, target_port):
     # Tell each client to update their local client tables
@@ -36,6 +38,18 @@ def serverDeregister(server_socket, target_addr, target_port):
     ack = "Header:\nack\nMessage:\n[You are Offline. Bye.]"
     server_socket.sendto(ack.encode(), (target_addr, target_port))  # Send ack
     print(">>>Sent the ack")
+
+# Server response (ACK only)
+def serverCheckGroup(server_socket, target_addr, target_port, group_name, client_name):
+    if(group_name not in group_list.keys()):
+        group_list[group_name] = []
+        print(">>> [Client {} created group {} successfully]".format(client_name, group_name))
+        ack = "Header:\nack\nMessage:\n[Group {} created by Server.]".format(group_name)
+    else:
+        print(">>> [Client {} creating group {} failed, group already exists]".format(client_name, group_name))
+        ack = "Header:\nack\nMessage:\n[Group {} already exists.]".format(group_name)
+    server_socket.sendto(ack.encode(), (target_addr, int(target_port)))
+    print(">>>Sent the ack\n\n")
 
 def serverMode(port):
     # Create UDP socket
@@ -89,5 +103,12 @@ def serverMode(port):
             server_send = threading.Thread(target=serverDeregister, args=(server_socket, client_address[0], client_port))
             server_send.start()
             print(">>> [Server table updated via deregistration.]")
+        elif header == 'create_group':
+            client_port = lines[3]
+            group_name = lines[5]
+            user_name = lines[7]
+            # Multithreading
+            server_send = threading.Thread(target=serverCheckGroup, args=(server_socket, client_address[0], client_port, group_name, user_name))
+            server_send.start()
         else:
             print("Please input a valid request to the server")

@@ -151,3 +151,13 @@ def clientMode(user_name, server_ip, server_port, client_port):
             client_socket.sendto(to_send.encode(), (server_ip, server_port))
             print(">>> deregistration request sent: notified leave")
             sys.exit(0) # Client can no longer type inputs
+        elif header == "create_group" and current_group == "":
+            try:
+                group_name = input_list[1]
+            except:
+                print("\n>>> Invalid input: need to include group name to be created")
+                continue
+            to_send = "header:\n" + header + "\nport:\n" + str(client_port) + "\ngroup_name:\n" + group_name + "\ncurrent_user:\n" + user_name
+
+            client_socket.sendto(to_send.encode(), (server_ip, server_port))
+            print(">>> request to create group sent")
