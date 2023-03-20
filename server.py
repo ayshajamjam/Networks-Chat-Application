@@ -8,6 +8,7 @@ import json
 global server_table
 server_table = {}
 
+global group_list
 group_list = {}
 
 # Server response when there is a new registering client (ACK + updated table)
@@ -97,7 +98,26 @@ def serverBroadcast(server_socket, sender_addr, sender_port, sender_name, group_
             server_socket.sendto(full_msg.encode(), (str(server_table[indx]['ip']), int(server_table[indx]['port'])))
     print(">>>Broadcasted the updated table\n\n")
 
+def serverListMembers(server_socket, target_addr, target_port, client_name, group_name):
+    print(">>> [Client {} requested listing members of group {}:]".format(client_name, group_name))
+    ack = "Header:\nack\nMessage:\n[Members in the group {}:]".format(group_name)
+    server_socket.sendto(ack.encode(), (target_addr, int(target_port)))
+    for client in group_list[group_name]:
+        print(">>> {}".format(client))
+        li = "Header:\nlist_members\nMessage:\n({}) {}".format(group_name, client)
+        server_socket.sendto(li.encode(), (target_addr, int(target_port)))
+    print(">>>Sent the ack\n\n")
 
+def serverLeaveGroup(server_socket, target_addr, target_port, client_name, group_name):
+    print(">>> [Client {} left group {}:]".format(client_name, group_name))
+    ack = "Header:\nleave\nMessage:\n[Leave group chat {}.]".format(group_name)
+    server_socket.sendto(ack.encode(), (target_addr, int(target_port)))
+
+    # Update group members in group: remove client
+    group_list[group_name].remove(client_name)
+
+    print(">>>Sent the ack\n\n")
+    
 def serverMode(port):
     # Create UDP socket
     server_socket = socket(AF_INET, SOCK_DGRAM)
@@ -176,11 +196,26 @@ def serverMode(port):
             message = lines[7]
             server_ip = lines[9]
             server_port = lines[11]
+            group_name = lines[13]
             # Multithreading
             server_send = threading.Thread(target=serverBroadcast, args=(server_socket, client_address[0], sender_port, sender_name, group_name, message, server_ip, server_port))
             server_send.start()
         elif header == 'ack':
             message = lines[3]
             print("ack recieved")
+        elif header == 'list_members':
+            client_port = lines[3]
+            user_name = lines[5]
+            group_name = lines[7]
+            # Multithreading
+            server_send = threading.Thread(target=serverListMembers, args=(server_socket, client_address[0], client_port, user_name, group_name))
+            server_send.start()
+        elif header == 'leave_group':
+            client_port = lines[3]
+            user_name = lines[5]
+            group_name = lines[7]
+            # Multithreading
+            server_send = threading.Thread(target=serverLeaveGroup, args=(server_socket, client_address[0], client_port, user_name, group_name))
+            server_send.start()
         else:
             print("Please input a valid request to the server")

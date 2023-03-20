@@ -74,6 +74,23 @@ def clientListen(port):
             ack = "Header:\nack\nMessage:\n{}".format(message)
             listen_socket.sendto(ack.encode(), (server_ip, server_port))
             print(">>>Sent the ack\n\n")
+        elif(header == 'list_members'):
+            member = lines[3]
+            print(">>> " + member)
+        elif(header == 'leave'):
+            message = lines[3]
+            print("ack recieved")
+            print(">>> " + message)
+
+            # Reset current_group
+            current_group = ""
+
+            # Print all private messages received while in gc
+            for msg in private_messages:
+                print(msg)
+
+            # Reset all private messages
+            private_messages = []
 
 def clientMode(user_name, server_ip, server_port, client_port):
 
@@ -198,7 +215,13 @@ def clientMode(user_name, server_ip, server_port, client_port):
             message = ""
             for i in range(1, len(input_list)):
                 message = message + input_list[i] + " "
-            to_send = "header:\n" + header + "\nsender:\n" + user_name + "\nport:\n" + str(client_port) + "\nmessage:\n" + message + "\nserver_ip\n" + server_ip + "\nserver_port\n" + str(server_port)
+            to_send = "header:\n" + header + "\nsender:\n" + user_name + "\nport:\n" + str(client_port) + "\nmessage:\n" + message + "\nserver_ip\n" + server_ip + "\nserver_port\n" + str(server_port) + "\ngroup_name\n" + current_group
             client_socket.sendto(to_send.encode(), (server_ip, server_port))        
+        elif header == 'list_members' and current_group != "":
+            to_send = "header:\n" + header + "\nport:\n" + str(client_port) + "\ncurrent_user:\n" + user_name + '\ngroup_name:\n' + current_group
+            client_socket.sendto(to_send.encode(), (server_ip, server_port))
+        elif header == "leave_group" and current_group != "":
+            to_send = "header:\n" + header + "\nport:\n" + str(client_port) + "\ncurrent_user:\n" + user_name + '\ngroup_name:\n' + current_group
+            client_socket.sendto(to_send.encode(), (server_ip, server_port))
         else:
             print("Please input a valid request")
