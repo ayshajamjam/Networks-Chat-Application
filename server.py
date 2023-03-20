@@ -77,12 +77,13 @@ def serverJoinGroup(server_socket, target_addr, target_port, group_name, client_
 def serverBroadcast(server_socket, sender_addr, sender_port, sender_name, group_name, message, server_ip, server_port):
     print(">>> [Client {} sent group message: {}]".format(sender_name, message))
 
+    # send ack to original sender
     ack = "Header:\nack\nMessage:\n[Message received by Server.]"
     server_socket.sendto(ack.encode(), (sender_addr, int(sender_port)))
     print(">>>Sent the ack\n\n")
 
+    # Construct message to be sent to each user
     msg = "Group_Message <" + sender_name + ">: " + message
-
     full_msg = "Header:\nsend_group\nMessage:\n" + msg + "\nServer_ip:\n" + server_ip + "\nServer_port:\n" + server_port
     print(str(sender_addr), int(sender_port))
 
@@ -91,8 +92,8 @@ def serverBroadcast(server_socket, sender_addr, sender_port, sender_name, group_
     print("CLIENTS IN GROUP")
     print(clients_in_group)
 
+    # Send message those in the group except the client that originally sent the message
     for indx in server_table.keys():
-        # Send to those in the group except the client that sent the message
         print(str(server_table[indx]['ip']), int(server_table[indx]['port']), str(server_table[indx]['name']))
         if(not ((str(server_table[indx]['ip']) == str(sender_addr)) and (int(server_table[indx]['port']) == int(sender_port))) and str(server_table[indx]['name']) in clients_in_group):
             server_socket.sendto(full_msg.encode(), (str(server_table[indx]['ip']), int(server_table[indx]['port'])))
