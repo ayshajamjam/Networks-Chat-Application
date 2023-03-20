@@ -72,7 +72,32 @@ def serverJoinGroup(server_socket, target_addr, target_port, group_name, client_
         ack = "Header:\nnack\nMessage:\n[Group {} does not exist.]".format(group_name)
     server_socket.sendto(ack.encode(), (target_addr, int(target_port)))
     print(">>>Sent the ack\n\n")
-    
+
+def serverBroadcast(server_socket, sender_addr, sender_port, sender_name, group_name, message, server_ip, server_port):
+    print(">>> [Client {} sent group message: {}]".format(sender_name, message))
+
+    ack = "Header:\nack\nMessage:\n[Message received by Server.]"
+    server_socket.sendto(ack.encode(), (sender_addr, int(sender_port)))
+    print(">>>Sent the ack\n\n")
+
+    msg = "Group_Message <" + sender_name + ">: " + message
+
+    full_msg = "Header:\nsend_group\nMessage:\n" + msg + "\nServer_ip:\n" + server_ip + "\nServer_port:\n" + server_port
+    print(str(sender_addr), int(sender_port))
+
+    # Get the names of each client in the group
+    clients_in_group = group_list[group_name]
+    print("CLIENTS IN GROUP")
+    print(clients_in_group)
+
+    for indx in server_table.keys():
+        # Send to those in the group except the client that sent the message
+        print(str(server_table[indx]['ip']), int(server_table[indx]['port']), str(server_table[indx]['name']))
+        if(not ((str(server_table[indx]['ip']) == str(sender_addr)) and (int(server_table[indx]['port']) == int(sender_port))) and str(server_table[indx]['name']) in clients_in_group):
+            server_socket.sendto(full_msg.encode(), (str(server_table[indx]['ip']), int(server_table[indx]['port'])))
+    print(">>>Broadcasted the updated table\n\n")
+
+
 def serverMode(port):
     # Create UDP socket
     server_socket = socket(AF_INET, SOCK_DGRAM)
@@ -145,5 +170,17 @@ def serverMode(port):
             # Multithreading
             server_send = threading.Thread(target=serverJoinGroup, args=(server_socket, client_address[0], client_port, group_name, user_name))
             server_send.start()
+        elif header == 'send_group':
+            sender_name = lines[3]
+            sender_port = lines[5]
+            message = lines[7]
+            server_ip = lines[9]
+            server_port = lines[11]
+            # Multithreading
+            server_send = threading.Thread(target=serverBroadcast, args=(server_socket, client_address[0], sender_port, sender_name, group_name, message, server_ip, server_port))
+            server_send.start()
+        elif header == 'ack':
+            message = lines[3]
+            print("ack recieved")
         else:
             print("Please input a valid request to the server")

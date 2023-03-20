@@ -66,7 +66,14 @@ def clientListen(port):
         elif(header == 'list_groups'):
             group_name = lines[3]
             print(">>> " + group_name)
-
+        elif(header == 'send_group'):
+            message = lines[3]
+            server_ip = lines[5]
+            server_port = int(lines[7])
+            print(message)
+            ack = "Header:\nack\nMessage:\n{}".format(message)
+            listen_socket.sendto(ack.encode(), (server_ip, server_port))
+            print(">>>Sent the ack\n\n")
 
 def clientMode(user_name, server_ip, server_port, client_port):
 
@@ -186,6 +193,12 @@ def clientMode(user_name, server_ip, server_port, client_port):
 
             to_send = "header:\n" + header + "\nport:\n" + str(client_port) + "\ngroup_name:\n" + group_name + "\ncurrent_user:\n" + user_name
             client_socket.sendto(to_send.encode(), (server_ip, server_port))
-            print(">>> request to join group sent")        
+            print(">>> request to join group sent")
+        elif header == 'send_group' and current_group != "":
+            message = ""
+            for i in range(1, len(input_list)):
+                message = message + input_list[i] + " "
+            to_send = "header:\n" + header + "\nsender:\n" + user_name + "\nport:\n" + str(client_port) + "\nmessage:\n" + message + "\nserver_ip\n" + server_ip + "\nserver_port\n" + str(server_port)
+            client_socket.sendto(to_send.encode(), (server_ip, server_port))        
         else:
             print("Please input a valid request")
