@@ -62,6 +62,17 @@ def serverListGroups(server_socket, target_addr, target_port, client_name):
 
     print(">>>Sent the ack\n\n")
 
+def serverJoinGroup(server_socket, target_addr, target_port, group_name, client_name):
+    if(group_name in group_list.keys()):
+        group_list[group_name].append(client_name)
+        print(">>> [Client {} joined group {}]".format(client_name, group_name))
+        ack = "Header:\nack\nMessage:\n[Entered group {} successfully.]".format(group_name)
+    else:
+        print(">>> [Client {} joining group {} failed, group does not exist]".format(client_name, group_name))
+        ack = "Header:\nnack\nMessage:\n[Group {} does not exist.]".format(group_name)
+    server_socket.sendto(ack.encode(), (target_addr, int(target_port)))
+    print(">>>Sent the ack\n\n")
+    
 def serverMode(port):
     # Create UDP socket
     server_socket = socket(AF_INET, SOCK_DGRAM)
@@ -126,6 +137,13 @@ def serverMode(port):
             user_name = lines[5]
             # Multithreading
             server_send = threading.Thread(target=serverListGroups, args=(server_socket, client_address[0], client_port, user_name))
+            server_send.start()
+        elif header == 'join_group':
+            client_port = lines[3]
+            group_name = lines[5]
+            user_name = lines[7]
+            # Multithreading
+            server_send = threading.Thread(target=serverJoinGroup, args=(server_socket, client_address[0], client_port, group_name, user_name))
             server_send.start()
         else:
             print("Please input a valid request to the server")

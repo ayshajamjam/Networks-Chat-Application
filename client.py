@@ -32,6 +32,13 @@ def clientListen(port):
         if(header == 'ack'):
             message = lines[3]
             print("ack recieved " + ">>> " + message)
+        elif(header == 'nack'):
+            message = lines[3]
+            print("ack recieved")
+            print(">>> " + message)
+
+            # Previously set current_group to be value of a group that does not exist
+            current_group = ""
         elif(header == 'update'):
             # update current client's table to match the server
             payload = lines[3]
@@ -78,8 +85,8 @@ def clientMode(user_name, server_ip, server_port, client_port):
     while True:
         print("LOCAL TABLE")
         print(local_table)   # Show updated local table
-        # global current_group
-        # print("CURRENT_GROUP: " + current_group)
+        global current_group
+        print("CURRENT_GROUP: " + current_group)
         if (current_group == ""):
             print(">>>", end="")
         else:
@@ -168,5 +175,17 @@ def clientMode(user_name, server_ip, server_port, client_port):
 
             client_socket.sendto(to_send.encode(), (server_ip, server_port))
             print(">>> request to retrieve all groups sent")
+        elif header == 'join_group' and current_group == "":
+            try:
+                group_name = input_list[1]
+            except:
+                print("\n>>> Invalid input: need to include group name to join")
+                continue
+            
+            current_group = group_name
+
+            to_send = "header:\n" + header + "\nport:\n" + str(client_port) + "\ngroup_name:\n" + group_name + "\ncurrent_user:\n" + user_name
+            client_socket.sendto(to_send.encode(), (server_ip, server_port))
+            print(">>> request to join group sent")        
         else:
             print("Please input a valid request")
