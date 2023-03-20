@@ -56,7 +56,9 @@ def clientListen(port):
             ack = "Header:\nack\nMessage:\n[Message received by {}.]".format(recipient_name)
             listen_socket.sendto(ack.encode(), (original_sender_ip, original_sender_port))
             print(">>>Sent the ack\n\n")
-
+        elif(header == 'list_groups'):
+            group_name = lines[3]
+            print(">>> " + group_name)
 
 
 def clientMode(user_name, server_ip, server_port, client_port):
@@ -161,3 +163,10 @@ def clientMode(user_name, server_ip, server_port, client_port):
 
             client_socket.sendto(to_send.encode(), (server_ip, server_port))
             print(">>> request to create group sent")
+        elif header == "list_groups" and current_group == "":
+            to_send = "header:\n" + header + "\nport:\n" + str(client_port) + "\ncurrent_user:\n" + user_name
+
+            client_socket.sendto(to_send.encode(), (server_ip, server_port))
+            print(">>> request to retrieve all groups sent")
+        else:
+            print("Please input a valid request")

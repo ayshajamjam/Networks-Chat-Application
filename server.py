@@ -51,6 +51,17 @@ def serverCheckGroup(server_socket, target_addr, target_port, group_name, client
     server_socket.sendto(ack.encode(), (target_addr, int(target_port)))
     print(">>>Sent the ack\n\n")
 
+def serverListGroups(server_socket, target_addr, target_port, client_name):
+    print(">>> [Client {} requested listing groups, current groups:]".format(client_name))
+    ack = "Header:\nack\nMessage:\n[Available group chats:]"
+    server_socket.sendto(ack.encode(), (target_addr, int(target_port)))
+    for group in group_list.keys():
+        print(">>> " + group)
+        li = "Header:\nlist_groups\nMessage:\n{}".format(group)
+        server_socket.sendto(li.encode(), (target_addr, int(target_port)))
+
+    print(">>>Sent the ack\n\n")
+
 def serverMode(port):
     # Create UDP socket
     server_socket = socket(AF_INET, SOCK_DGRAM)
@@ -109,6 +120,12 @@ def serverMode(port):
             user_name = lines[7]
             # Multithreading
             server_send = threading.Thread(target=serverCheckGroup, args=(server_socket, client_address[0], client_port, group_name, user_name))
+            server_send.start()
+        elif header == 'list_groups':
+            client_port = lines[3]
+            user_name = lines[5]
+            # Multithreading
+            server_send = threading.Thread(target=serverListGroups, args=(server_socket, client_address[0], client_port, user_name))
             server_send.start()
         else:
             print("Please input a valid request to the server")
