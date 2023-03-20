@@ -99,28 +99,13 @@ def clientMode(user_name, server_ip, server_port, client_port):
             print("\n>>>Invalid input")
             continue
     
-        # if header == "dereg":   # notified leave
-        #     # Verify target user name exists
-        #     target_user_name = input_list[1]
-
-        #     target_ip = ""
-        #     target_port = ""
-        #     for indx in local_table:
-        #         if local_table[indx]['name'] == target_user_name:
-        #             target_ip = local_table[indx]['ip']
-        #             target_port = str(local_table[indx]['port'])
-
-        #     if (target_ip == "" and target_port == ""):
-        #         print(">>>Incorrect username provided")
-        #         continue
-
-        #     to_send = "header:\n" + header + "\nport:\n" + str(target_port)
-        #     client_socket.sendto(to_send.encode(), (server_ip, server_port))
-        #     print(">>> deregistration request sent: notified leave")
-        #     sys.exit(0) # Client can no longer type inputs
         if header == "send":
             client_ip = '127.0.0.1'
-            target_user_name = input_list[1]
+            try:
+                target_user_name = input_list[1]
+            except:
+                print("\n>>>Need to include username")
+                continue
 
             target_ip = ""
             target_port = ""
@@ -143,4 +128,26 @@ def clientMode(user_name, server_ip, server_port, client_port):
             # Send message to target client
             client_socket.sendto(to_send.encode(), (target_ip, int(target_port)))
             print(">>> Message sent")
-            time.sleep(.5)
+        elif header == "dereg":   # notified leave
+            # Verify target user name exists
+            try:
+                target_user_name = input_list[1]
+            except:
+                print("\n>>>Invalid input: need to include username to dereg")
+                continue
+
+            target_ip = ""
+            target_port = ""
+            for indx in local_table:
+                if local_table[indx]['name'] == target_user_name:
+                    target_ip = local_table[indx]['ip']
+                    target_port = str(local_table[indx]['port'])
+
+            if (target_ip == "" and target_port == ""):
+                print(">>>Incorrect username provided")
+                continue
+
+            to_send = "header:\n" + header + "\nport:\n" + str(target_port)
+            client_socket.sendto(to_send.encode(), (server_ip, server_port))
+            print(">>> deregistration request sent: notified leave")
+            sys.exit(0) # Client can no longer type inputs
