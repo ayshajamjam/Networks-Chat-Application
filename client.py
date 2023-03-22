@@ -62,7 +62,14 @@ def clientListen(port):
 
             ack = "Header:\nack\nMessage:\n[Message received by {}.]".format(recipient_name)
             listen_socket.sendto(ack.encode(), (original_sender_ip, original_sender_port))
-            print(">>>Sent the ack\n\n")
+            print(">>> Sent the ack\n\n")
+        elif(header == 'dereg'):
+            message = lines[3]
+            print("ack recieved " + ">>> " + message)
+            print(listen_socket.fileno())
+            listen_socket.close()
+            print(listen_socket.fileno())
+            break
         elif(header == 'list_groups'):
             group_name = lines[3]
             print(">>> " + group_name)
@@ -122,7 +129,11 @@ def clientMode(user_name, server_ip, server_port, client_port):
             to_send = "header:\n" + "dereg" + "\nport:\n" + str(client_port)
             client_socket.sendto(to_send.encode(), (server_ip, server_port))
             print(">>> deregistration request sent: silent leave")
-            sys.exit(0) # Client can no longer type inputs
+            print(client_socket.fileno())
+            client_socket.close()
+            # sys.exit(0) # Client can no longer type inputs
+            print(client_socket.fileno())
+            break
         
         input_list = temp.split()
 
@@ -183,7 +194,11 @@ def clientMode(user_name, server_ip, server_port, client_port):
             to_send = "header:\n" + header + "\nport:\n" + str(target_port)
             client_socket.sendto(to_send.encode(), (server_ip, server_port))
             print(">>> deregistration request sent: notified leave")
-            sys.exit(0) # Client can no longer type inputs
+            print(client_socket.fileno())
+            client_socket.close()
+            # sys.exit(0) # Client can no longer type inputs
+            print(client_socket.fileno())
+            break
         elif header == "create_group" and current_group == "":
             try:
                 group_name = input_list[1]

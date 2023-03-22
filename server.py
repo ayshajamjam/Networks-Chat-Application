@@ -36,7 +36,7 @@ def serverDeregister(server_socket, target_addr, target_port):
         server_socket.sendto(update.encode(), (str(server_table[indx]['ip']), int(server_table[indx]['port'])))  # Send updated table
     print(">>>Broadcasted the updated table\n\n")
 
-    ack = "Header:\nack\nMessage:\n[You are Offline. Bye.]"
+    ack = "Header:\ndereg\nMessage:\n[You are Offline. Bye.]"
     server_socket.sendto(ack.encode(), (target_addr, target_port))  # Send ack
     print(">>>Sent the ack")
 
