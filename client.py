@@ -168,7 +168,7 @@ def clientMode(user_name, server_ip, server_port, client_port):
             print("\n>>>Invalid input")
             continue
     
-        if header == "send":
+        if header == "send" and  current_group == "":
             client_ip = '127.0.0.1'
             try:
                 target_user_name = input_list[1]
@@ -197,17 +197,34 @@ def clientMode(user_name, server_ip, server_port, client_port):
             # Set acked variable to contain recipient port
             acked = {int(target_port): 0}
 
-            # Send message to target client
-            client_socket.sendto(to_send.encode(), (target_ip, int(target_port)))
-            time.sleep(.5)
-            print("WOKE UP")
-            print(acked)
-            if(acked[int(target_port)] != 1):
-                print(">>> [No ACK from {}, message not delivered]".format(target_user_name))
-                print("THE CLIENT DID NOT RECEIVE THE MESSAGE. IT IS OFFLINE")
-                # Tell server to update tables
-                to_send = "header:\n" + "dereg" + "\nport:\n" + str(target_port)
-                client_socket.sendto(to_send.encode(), (server_ip, server_port))
+            # # Send message to target client
+            # client_socket.sendto(to_send.encode(), (target_ip, int(target_port)))
+            # time.sleep(.5)
+            # print("WOKE UP")
+            # print(acked)
+            # if(acked[int(target_port)] != 1):
+            #     print(">>> [No ACK from {}, message not delivered]".format(target_user_name))
+            #     print("THE CLIENT DID NOT RECEIVE THE MESSAGE. IT IS OFFLINE")
+            #     # Tell server to update tables
+            #     to_send = "header:\n" + "dereg" + "\nport:\n" + str(target_port)
+            #     client_socket.sendto(to_send.encode(), (server_ip, server_port))
+
+            # Try 5 times to send message to the target client
+            for i in range(5):
+                print("\nTry {})".format(i+1))
+                client_socket.sendto(to_send.encode(), (target_ip, int(target_port)))
+                time.sleep(.5)
+                print("WOKE UP")
+                print(acked)
+                if(i <= 3 and acked[int(target_port)] != 1):
+                    print(">>> [No ACK from {}, message not delivered]".format(target_user_name))
+                    print("THE CLIENT DID NOT RECEIVE THE MESSAGE. IT IS OFFLINE")
+                    continue
+                if(i == 4 and acked[int(target_port)] != 1):
+                    # Tell server to update tables
+                    to_send = "header:\n" + "dereg" + "\nport:\n" + str(target_port)
+                    client_socket.sendto(to_send.encode(), (server_ip, server_port))
+                break
         elif header == "dereg":   # notified leave
             # Verify target user name exists
             try:
@@ -244,7 +261,7 @@ def clientMode(user_name, server_ip, server_port, client_port):
                 if(i <= 3 and acked[int(server_port)] != 1):
                     print("THE SERVER DID NOT RECEIVE DEREG REQUEST. SENDING AGAIN")
                     continue
-                if(i == 4):
+                if(i == 4 and acked[int(target_port)] != 1):
                     # Forced exit
                     print(">>> [Server not responding]")
                     print(">>> [Exiting]")
@@ -280,7 +297,7 @@ def clientMode(user_name, server_ip, server_port, client_port):
                 if(i <= 3 and acked[int(server_port)] != 1):
                     print("THE SERVER DID NOT RECEIVE CREATE GROUP REQ. SENDING AGAIN")
                     continue
-                if(i == 4):
+                if(i == 4 and acked[int(target_port)] != 1):
                     # Forced exit
                     print(">>> [Server not responding]")
                     print(">>> [Exiting]")
@@ -307,7 +324,7 @@ def clientMode(user_name, server_ip, server_port, client_port):
                 if(i <= 3 and acked[int(server_port)] != 1):
                     print("THE SERVER DID NOT RECEIVE LIST GROUP REQ. SENDING AGAIN")
                     continue
-                if(i == 4):
+                if(i == 4 and acked[int(target_port)] != 1):
                     # Forced exit
                     print(">>> [Server not responding]")
                     print(">>> [Exiting]")
@@ -343,7 +360,7 @@ def clientMode(user_name, server_ip, server_port, client_port):
                 if(i <= 3 and acked[int(server_port)] != 1):
                     print("THE SERVER DID NOT RECEIVE JOIN GROUP REQ. SENDING AGAIN")
                     continue
-                if(i == 4):
+                if(i == 4 and acked[int(target_port)] != 1):
                     # Forced exit
                     print(">>> [Server not responding]")
                     print(">>> [Exiting]")
@@ -381,7 +398,7 @@ def clientMode(user_name, server_ip, server_port, client_port):
                 if(i <= 3 and acked[int(server_port)] != 1):
                     print(">>> [Message not delivered to server]".format(target_user_name))
                     continue
-                if(i == 4):
+                if(i == 4 and acked[int(target_port)] != 1):
                     # Forced exit
                     print(">>> [Server not responding]")
                     print(">>> [Exiting]")
@@ -408,7 +425,7 @@ def clientMode(user_name, server_ip, server_port, client_port):
                 if(i <= 3 and acked[int(server_port)] != 1):
                     print("THE SERVER DID NOT RECEIVE LIST MEMBERS IN GROUP REQ. SENDING AGAIN")
                     continue
-                if(i == 4):
+                if(i == 4 and acked[int(target_port)] != 1):
                     # Forced exit
                     print(">>> [Server not responding]")
                     print(">>> [Exiting]")
@@ -435,7 +452,7 @@ def clientMode(user_name, server_ip, server_port, client_port):
                 if(i <= 3 and acked[int(server_port)] != 1):
                     print("THE SERVER DID NOT RECEIVE LEAVE GROUP REQ. SENDING AGAIN")
                     continue
-                if(i == 4):
+                if(i == 4 and acked[int(target_port)] != 1):
                     # Forced exit
                     print(">>> [Server not responding]")
                     print(">>> [Exiting]")
