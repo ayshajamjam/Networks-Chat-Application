@@ -131,8 +131,6 @@ def clientMode(user_name, server_ip, server_port, client_port):
     create_table(user_name, '127.0.0.1', client_port) # Create local table
     client_socket.sendto(register_msg.encode(), (server_ip, server_port)) # Send registration request to server
 
-    # TODO (optional?): only continue if ack from registering is received
-
     # Multithreading
     listen = threading.Thread(target=clientListen, args=(client_port,))
     listen.start()
@@ -388,14 +386,6 @@ def clientMode(user_name, server_ip, server_port, client_port):
             
             # Set acked variable to contain serveer port
             acked = {int(server_port): 0}
-
-            # # Send message to server
-            # client_socket.sendto(to_send.encode(), (server_ip, int(server_port)))
-            # time.sleep(.5)
-            # print("WOKE UP")
-            # print(acked)
-            # if(acked[int(server_port)] != 1):
-            #     print(">>> [Message not delivered to server]".format(target_user_name))
 
             # Try 5 times to ask the server to send message to the group
             for i in range(5):
