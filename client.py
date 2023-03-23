@@ -224,28 +224,31 @@ def clientMode(user_name, server_ip, server_port, client_port):
             acked = {int(server_port): 0}
 
             # Try 5 times to ask the server to dereg
-            for i in range(5):
+            for i in range(6):
                 print("\nTry {})".format(i+1))
                 client_socket.sendto(to_send.encode(), (server_ip, server_port))
                 print(">>> deregistration request sent: notified leave")
                 time.sleep(.5)
                 print("WOKE UP")
                 print(acked)
-                if(i < 4 and acked[int(server_port)] != 1):
+                if(acked[int(server_port)] == 1):
+                    break
+                if(i <= 3 and acked[int(server_port)] != 1):
                     print("THE SERVER DID NOT RECEIVE DEREG REQUEST. SENDING AGAIN")
                     continue
-                elif(i == 4):
+                if(i == 4):
                     # Forced exit
                     print(">>> [Server not responding]")
                     print(">>> [Exiting]")
                     # TODO: How to close client listening socket?
-
-                print("Closing client socket")
-                print(client_socket.fileno())
-                client_socket.close()
-                print(client_socket.fileno())
-                listen.join()  # TODO: How to close client listening socket?
+                    listen.join()  # TODO: How to close client listening socket?
                 break
+            
+            print("Closing client socket")
+            print(client_socket.fileno())
+            client_socket.close()
+            print(client_socket.fileno())
+            
             break
 
         elif header == "create_group" and current_group == "":
@@ -256,8 +259,29 @@ def clientMode(user_name, server_ip, server_port, client_port):
                 continue
             to_send = "header:\n" + header + "\nport:\n" + str(client_port) + "\ngroup_name:\n" + group_name + "\ncurrent_user:\n" + user_name
 
-            client_socket.sendto(to_send.encode(), (server_ip, server_port))
-            print(">>> request to create group sent")
+            acked = {int(server_port): 0}
+
+            # Try 5 times to ask the server to create group
+            for i in range(5):
+                print("\nTry {})".format(i+1))
+                client_socket.sendto(to_send.encode(), (server_ip, server_port))
+                print(">>> request to create group sent")
+                time.sleep(.00005)
+                print("WOKE UP")
+                print(acked)
+                if(i <= 3 and acked[int(server_port)] != 1):
+                    print("THE SERVER DID NOT RECEIVE CREATE GROUP REQ. SENDING AGAIN")
+                    continue
+                if(i == 4):
+                    # Forced exit
+                    print(">>> [Server not responding]")
+                    print(">>> [Exiting]")
+                    print("Closing client socket")
+                    print(client_socket.fileno())
+                    client_socket.close()
+                    print(client_socket.fileno())
+                    listen.join()  # TODO: How to close client listening socket?
+                break
         elif header == "list_groups" and current_group == "":
             to_send = "header:\n" + header + "\nport:\n" + str(client_port) + "\ncurrent_user:\n" + user_name
 
