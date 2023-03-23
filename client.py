@@ -168,7 +168,11 @@ def clientMode(user_name, server_ip, server_port, client_port):
             print("\n>>>Invalid input")
             continue
     
-        if header == "send" and  current_group == "":
+        if header == "send":
+            if(current_group != ""):
+                print("Cannot send a private message while you are in a group")
+                continue
+
             client_ip = '127.0.0.1'
             try:
                 target_user_name = input_list[1]
@@ -196,18 +200,6 @@ def clientMode(user_name, server_ip, server_port, client_port):
 
             # Set acked variable to contain recipient port
             acked = {int(target_port): 0}
-
-            # # Send message to target client
-            # client_socket.sendto(to_send.encode(), (target_ip, int(target_port)))
-            # time.sleep(.5)
-            # print("WOKE UP")
-            # print(acked)
-            # if(acked[int(target_port)] != 1):
-            #     print(">>> [No ACK from {}, message not delivered]".format(target_user_name))
-            #     print("THE CLIENT DID NOT RECEIVE THE MESSAGE. IT IS OFFLINE")
-            #     # Tell server to update tables
-            #     to_send = "header:\n" + "dereg" + "\nport:\n" + str(target_port)
-            #     client_socket.sendto(to_send.encode(), (server_ip, server_port))
 
             # Try 5 times to send message to the target client
             for i in range(5):
@@ -276,7 +268,11 @@ def clientMode(user_name, server_ip, server_port, client_port):
             
             break
 
-        elif header == "create_group" and current_group == "":
+        elif header == "create_group":
+            if(current_group != ""):
+                print("Cannot create a new group while you are in a group")
+                continue
+
             try:
                 group_name = input_list[1]
             except:
@@ -308,7 +304,12 @@ def clientMode(user_name, server_ip, server_port, client_port):
                     listen.join()  # TODO: How to close client listening socket?
                 break
 
-        elif header == "list_groups" and current_group == "":
+        elif header == "list_groups":
+            
+            if(current_group != ""):
+                print("Cannot list groups while you are in a group")
+                continue
+
             to_send = "header:\n" + header + "\nport:\n" + str(client_port) + "\ncurrent_user:\n" + user_name
             
             acked = {int(server_port): 0}
@@ -336,7 +337,11 @@ def clientMode(user_name, server_ip, server_port, client_port):
                 break
 
 
-        elif header == 'join_group' and current_group == "":
+        elif header == 'join_group':
+            if(current_group != ""):
+                print("Cannot join another group while you are in a group")
+                continue
+
             try:
                 group_name = input_list[1]
             except:
@@ -371,7 +376,11 @@ def clientMode(user_name, server_ip, server_port, client_port):
                     listen.join()  # TODO: How to close client listening socket?
                 break
 
-        elif header == 'send_group' and current_group != "":
+        elif header == 'send_group':
+            if(current_group == ""):
+                print("You are not in a group chat")
+                continue
+
             message = ""
             for i in range(1, len(input_list)):
                 message = message + input_list[i] + " "
@@ -409,7 +418,11 @@ def clientMode(user_name, server_ip, server_port, client_port):
                     listen.join()  # TODO: How to close client listening socket?
                 break
  
-        elif header == 'list_members' and current_group != "":
+        elif header == 'list_members':
+            if(current_group == ""):
+                print("You are not in a group chat so you cannot see its members")
+                continue
+
             to_send = "header:\n" + header + "\nport:\n" + str(client_port) + "\ncurrent_user:\n" + user_name + '\ngroup_name:\n' + current_group
 
             acked = {int(server_port): 0}
@@ -436,7 +449,11 @@ def clientMode(user_name, server_ip, server_port, client_port):
                     listen.join()  # TODO: How to close client listening socket?
                 break
 
-        elif header == "leave_group" and current_group != "":
+        elif header == "leave_group":
+            if(current_group == ""):
+                print("You are not in a group chat so you cannot leave one")
+                continue
+
             to_send = "header:\n" + header + "\nport:\n" + str(client_port) + "\ncurrent_user:\n" + user_name + '\ngroup_name:\n' + current_group
 
             acked = {int(server_port): 0}
