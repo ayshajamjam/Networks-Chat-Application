@@ -359,7 +359,39 @@ def clientMode(user_name, server_ip, server_port, client_port):
             for i in range(1, len(input_list)):
                 message = message + input_list[i] + " "
             to_send = "header:\n" + header + "\nsender:\n" + user_name + "\nport:\n" + str(client_port) + "\nmessage:\n" + message + "\nserver_ip\n" + server_ip + "\nserver_port\n" + str(server_port) + "\ngroup_name\n" + current_group
-            client_socket.sendto(to_send.encode(), (server_ip, server_port))        
+            
+            # Set acked variable to contain serveer port
+            acked = {int(server_port): 0}
+
+            # # Send message to server
+            # client_socket.sendto(to_send.encode(), (server_ip, int(server_port)))
+            # time.sleep(.5)
+            # print("WOKE UP")
+            # print(acked)
+            # if(acked[int(server_port)] != 1):
+            #     print(">>> [Message not delivered to server]".format(target_user_name))
+
+            # Try 5 times to ask the server to send message to the group
+            for i in range(5):
+                print("\nTry {})".format(i+1))
+                client_socket.sendto(to_send.encode(), (server_ip, int(server_port)))
+                time.sleep(.5)
+                print("WOKE UP")
+                print(acked)
+                if(i <= 3 and acked[int(server_port)] != 1):
+                    print(">>> [Message not delivered to server]".format(target_user_name))
+                    continue
+                if(i == 4):
+                    # Forced exit
+                    print(">>> [Server not responding]")
+                    print(">>> [Exiting]")
+                    print("Closing client socket")
+                    print(client_socket.fileno())
+                    client_socket.close()
+                    print(client_socket.fileno())
+                    listen.join()  # TODO: How to close client listening socket?
+                break
+ 
         elif header == 'list_members' and current_group != "":
             to_send = "header:\n" + header + "\nport:\n" + str(client_port) + "\ncurrent_user:\n" + user_name + '\ngroup_name:\n' + current_group
 
