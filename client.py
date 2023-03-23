@@ -111,7 +111,6 @@ def clientListen(port):
                 print(acked)
             message = lines[3]
             print("ack recieved " + ">>> " + message)
-
             # Reset current_group
             current_group = ""
 
@@ -121,31 +120,6 @@ def clientListen(port):
 
             # Reset all private messages
             private_messages = []
-
-def five_time_send_server_req(client_socket, listen, server_ip, server_port):
-    acked = {int(server_port): 0}
-
-    # Try 5 times to ask the server to leave group
-    for i in range(5):
-        print("\nTry {})".format(i+1))
-        client_socket.sendto(to_send.encode(), (server_ip, server_port))
-        print(">>> request to join leave sent")
-        time.sleep(.5)
-        print("WOKE UP")
-        print(acked)
-        if(i <= 3 and acked[int(server_port)] != 1):
-            print("THE SERVER DID NOT RECEIVE LEAVE GROUP REQ. SENDING AGAIN")
-            continue
-        if(i == 4):
-            # Forced exit
-            print(">>> [Server not responding]")
-            print(">>> [Exiting]")
-            print("Closing client socket")
-            print(client_socket.fileno())
-            client_socket.close()
-            print(client_socket.fileno())
-            listen.join()  # TODO: How to close client listening socket?
-        break
 
 def clientMode(user_name, server_ip, server_port, client_port):
 
@@ -415,7 +389,30 @@ def clientMode(user_name, server_ip, server_port, client_port):
 
         elif header == "leave_group" and current_group != "":
             to_send = "header:\n" + header + "\nport:\n" + str(client_port) + "\ncurrent_user:\n" + user_name + '\ngroup_name:\n' + current_group
-            five_time_send_server_req(client_socket, listen, server_ip, server_port)
+
+            acked = {int(server_port): 0}
+
+            # Try 5 times to ask the server to leave group
+            for i in range(5):
+                print("\nTry {})".format(i+1))
+                client_socket.sendto(to_send.encode(), (server_ip, server_port))
+                print(">>> request to join leave sent")
+                time.sleep(.5)
+                print("WOKE UP")
+                print(acked)
+                if(i <= 3 and acked[int(server_port)] != 1):
+                    print("THE SERVER DID NOT RECEIVE LEAVE GROUP REQ. SENDING AGAIN")
+                    continue
+                if(i == 4):
+                    # Forced exit
+                    print(">>> [Server not responding]")
+                    print(">>> [Exiting]")
+                    print("Closing client socket")
+                    print(client_socket.fileno())
+                    client_socket.close()
+                    print(client_socket.fileno())
+                    listen.join()  # TODO: How to close client listening socket?
+                break
 
         else:
             print("Please input a valid request")
