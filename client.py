@@ -396,7 +396,7 @@ def clientMode(user_name, server_ip, server_port, client_port):
             for i in range(5):
                 print("\nTry {})".format(i+1))
                 client_socket.sendto(to_send.encode(), (server_ip, server_port))
-                print(">>> request to join leave sent")
+                print(">>> request to leave group sent")
                 time.sleep(.5)
                 print("WOKE UP")
                 print(acked)
