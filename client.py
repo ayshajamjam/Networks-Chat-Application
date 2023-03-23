@@ -185,8 +185,11 @@ def clientMode(user_name, server_ip, server_port, client_port):
             print("WOKE UP")
             print(acked)
             if(acked[int(target_port)] != 1):
+                print(">>> [No ACK from {}, message not delivered]".format(target_user_name))
                 print("THE CLIENT DID NOT RECEIVE THE MESSAGE. IT IS OFFLINE")
-                #   TODO: tell server to update tables
+                # Tell server to update tables
+                to_send = "header:\n" + "dereg" + "\nport:\n" + str(target_port)
+                client_socket.sendto(to_send.encode(), (server_ip, server_port))
         elif header == "dereg":   # notified leave
             # Verify target user name exists
             try:
