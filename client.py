@@ -10,6 +10,8 @@ local_table = {}
 current_group = ""
 private_messages = []
 
+acked = {}
+
 def create_table(user_name, target_addr, target_port):
     local_table[len(local_table)] = {'name': user_name, 'ip': target_addr, 'port': target_port, 'status': 'yes'}
 
@@ -17,6 +19,7 @@ def clientListen(port):
 
     global current_group
     global private_messages
+    global acked
 
     print(">>>Client now listening")
 
@@ -30,13 +33,17 @@ def clientListen(port):
         lines = buffer.splitlines()
         header = lines[1]
         if(header == 'ack'):
+            print(acked)
+            print(sender_address[1])
+            if(sender_address[1] in acked.keys() and acked[sender_address[1]] == 0):
+                acked[sender_address[1]] = 1
+                print(acked)
             message = lines[3]
             print("ack recieved " + ">>> " + message)
         elif(header == 'nack'):
             message = lines[3]
             print("ack recieved")
             print(">>> " + message)
-
             # Previously set current_group to be value of a group that does not exist
             current_group = ""
         elif(header == 'update'):
@@ -52,7 +59,7 @@ def clientListen(port):
             original_sender_ip = lines[7]
             original_sender_port = int(lines[9])
             message = lines[11]
-            
+
             if(current_group != ""):    # Case: sending user is in a group chat
                 # Store private messages in a list
                 print("RECIEVED PRIVATE MESSAGE WHILE IN GC; exit to see")
@@ -170,8 +177,16 @@ def clientMode(user_name, server_ip, server_port, client_port):
             to_send = "header:\n" + header + "\ncurrent_user:\n" + user_name + "\nname\n" + target_user_name + "\nip\n" + str(client_ip) + "\nport:\n" + str(client_port) + "\nmessage:\n" + message
 
             # Send message to target client
+            global acked
+            acked = {int(target_port): 0}
+
             client_socket.sendto(to_send.encode(), (target_ip, int(target_port)))
-            print(">>> Message sent")
+            time.sleep(.5)
+            print("WOKE UP")
+            print(acked)
+            if(acked[int(target_port)] != 1):
+                print("THE CLIENT DID NOT RECEIVE THE MESSAGE. IT IS OFFLINE")
+                #   TODO: tell server to update tables
         elif header == "dereg":   # notified leave
             # Verify target user name exists
             try:
