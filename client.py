@@ -71,8 +71,15 @@ def clientListen(port):
             listen_socket.sendto(ack.encode(), (original_sender_ip, original_sender_port))
             print(">>> Sent the ack\n\n")
         elif(header == 'dereg'):
+            print(acked)
+            print(sender_address[1])
+            if(sender_address[1] in acked.keys() and acked[sender_address[1]] == 0):
+                acked[sender_address[1]] = 1
+                print(acked)
+
             message = lines[3]
             print("ack recieved " + ">>> " + message)
+            print("Closing listening socket")
             print(listen_socket.fileno())
             listen_socket.close()
             print(listen_socket.fileno())
@@ -116,11 +123,14 @@ def clientMode(user_name, server_ip, server_port, client_port):
     create_table(user_name, '127.0.0.1', client_port) # Create local table
     client_socket.sendto(register_msg.encode(), (server_ip, server_port)) # Send registration request to server
 
+    # TODO (optional?): only continue if ack from registering is received
+
     # Multithreading
     listen = threading.Thread(target=clientListen, args=(client_port,))
     listen.start()
 
     while True:
+        global acked
         print("LOCAL TABLE")
         print(local_table)   # Show updated local table
         global current_group
@@ -176,10 +186,10 @@ def clientMode(user_name, server_ip, server_port, client_port):
                 message = message + input_list[i] + " "
             to_send = "header:\n" + header + "\ncurrent_user:\n" + user_name + "\nname\n" + target_user_name + "\nip\n" + str(client_ip) + "\nport:\n" + str(client_port) + "\nmessage:\n" + message
 
-            # Send message to target client
-            global acked
+            # Set acked variable to contain recipient port
             acked = {int(target_port): 0}
 
+            # Send message to target client
             client_socket.sendto(to_send.encode(), (target_ip, int(target_port)))
             time.sleep(.5)
             print("WOKE UP")
@@ -210,13 +220,34 @@ def clientMode(user_name, server_ip, server_port, client_port):
                 continue
 
             to_send = "header:\n" + header + "\nport:\n" + str(target_port)
-            client_socket.sendto(to_send.encode(), (server_ip, server_port))
-            print(">>> deregistration request sent: notified leave")
-            print(client_socket.fileno())
-            client_socket.close()
-            # sys.exit(0) # Client can no longer type inputs
-            print(client_socket.fileno())
+
+            acked = {int(server_port): 0}
+
+            # Try 5 times to ask the server to dereg
+            for i in range(5):
+                print("\nTry {})".format(i+1))
+                client_socket.sendto(to_send.encode(), (server_ip, server_port))
+                print(">>> deregistration request sent: notified leave")
+                time.sleep(.5)
+                print("WOKE UP")
+                print(acked)
+                if(i < 4 and acked[int(server_port)] != 1):
+                    print("THE SERVER DID NOT RECEIVE DEREG REQUEST. SENDING AGAIN")
+                    continue
+                elif(i == 4):
+                    # Forced exit
+                    print(">>> [Server not responding]")
+                    print(">>> [Exiting]")
+                    # TODO: How to close client listening socket?
+
+                print("Closing client socket")
+                print(client_socket.fileno())
+                client_socket.close()
+                print(client_socket.fileno())
+                listen.join()  # TODO: How to close client listening socket?
+                break
             break
+
         elif header == "create_group" and current_group == "":
             try:
                 group_name = input_list[1]
