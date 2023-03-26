@@ -199,22 +199,18 @@ def clientMode(user_name, server_ip, server_port, client_port):
             # Set acked variable to contain recipient port
             acked = {int(target_port): 0}
 
-            # Try 5 times to send message to the target client
-            for i in range(5):
-                print("\nTry {})".format(i+1))
-                client_socket.sendto(to_send.encode(), (target_ip, int(target_port)))
-                time.sleep(.5)
-                print("WOKE UP")
-                print(acked)
-                if(i <= 3 and acked[int(target_port)] != 1):
-                    print(">>> [No ACK from {}, message not delivered]".format(target_user_name))
-                    print("THE CLIENT DID NOT RECEIVE THE MESSAGE. IT IS OFFLINE")
-                    continue
-                if(i == 4 and acked[int(target_port)] != 1):
-                    # Tell server to update tables
-                    to_send = "header:\n" + "dereg" + "\nport:\n" + str(target_port)
-                    client_socket.sendto(to_send.encode(), (server_ip, server_port))
-                break
+            # Try once to send message to the target client
+            client_socket.sendto(to_send.encode(), (target_ip, int(target_port)))
+            time.sleep(.5)
+            print("WOKE UP")
+            print(acked)
+            if(acked[int(target_port)] != 1):
+                print(">>> [No ACK from {}, message not delivered]".format(target_user_name))
+                print("THE CLIENT DID NOT RECEIVE THE MESSAGE. IT IS OFFLINE")
+                # Tell server to update tables
+                to_send = "header:\n" + "dereg" + "\nport:\n" + str(target_port)
+                client_socket.sendto(to_send.encode(), (server_ip, server_port))
+
         elif header == "dereg":   # notified leave
             # Verify target user name exists
             try:
