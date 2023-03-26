@@ -20,43 +20,39 @@ def clientListen(port):
     global current_group
     global private_messages
     global acked
+    global local_table
 
-    print(">>> Client now listening")
+    print(">>> Client now listening\n")
 
     # Need to declare a new socket bc socket is already being used to send
     listen_socket = socket(AF_INET, SOCK_DGRAM)
     listen_socket.bind(('', port))
 
     while True:
+
         buffer, sender_address = listen_socket.recvfrom(4096)
         buffer = buffer.decode()
         lines = buffer.splitlines()
         header = lines[1]
         if(header == 'ack'):
-            print(acked)
-            print(sender_address[1])
             if(sender_address[1] in acked.keys() and acked[sender_address[1]] == 0):
                 acked[sender_address[1]] = 1
-                print(acked)
             message = lines[3]
-            print("ack recieved " + ">>> " + message)
+            print(">>> Ack received: " + message + '\n')
         elif(header == 'nack'):
-            print(acked)
-            print(sender_address[1])
             if(sender_address[1] in acked.keys() and acked[sender_address[1]] == 0):
                 acked[sender_address[1]] = 1
-                print(acked)
             message = lines[3]
-            print("ack recieved " + ">>> " + message)
+            print(">>> Ack received: " + message + '\n')
             # Previously set current_group to be value of a group that does not exist
             current_group = ""
         elif(header == 'update'):
             # update current client's table to match the server
             payload = lines[3]
             dict = json.loads(payload)
-            global local_table
             local_table = dict
-            print(">>> [Client table updated.]")
+            print("[Client table updated.]")
+            print(local_table)
         elif(header == 'send'):
             original_sender_name = lines[3]
             recipient_name = lines[5]
@@ -73,20 +69,15 @@ def clientListen(port):
 
             ack = "Header:\nack\nMessage:\n[Message received by {}.]".format(recipient_name)
             listen_socket.sendto(ack.encode(), (original_sender_ip, original_sender_port))
-            print(">>> Sent the ack\n")
+            # print(">>> Sent the ack\n")
         elif(header == 'dereg'):
-            print(acked)
-            print(sender_address[1])
             if(sender_address[1] in acked.keys() and acked[sender_address[1]] == 0):
                 acked[sender_address[1]] = 1
-                print(acked)
 
             message = lines[3]
-            print("ack recieved " + ">>> " + message)
-            print("Closing listening socket")
-            print(listen_socket.fileno())
+            print(">>> Ack received: " + message)
+            print("Closing listening socket\n")
             listen_socket.close()
-            print(listen_socket.fileno())
             break
         elif(header == 'list_groups'):
             group_name = lines[3]
@@ -98,18 +89,15 @@ def clientListen(port):
             print(message)
             ack = "Header:\nack\nMessage:\n{}".format(message)
             listen_socket.sendto(ack.encode(), (server_ip, server_port))
-            print(">>>Sent the ack\n\n")
+            # print("Sent the ack\n\n")
         elif(header == 'list_members'):
             member = lines[3]
             print(">>> " + member)
         elif(header == 'leave'):
-            print(acked)
-            print(sender_address[1])
             if(sender_address[1] in acked.keys() and acked[sender_address[1]] == 0):
                 acked[sender_address[1]] = 1
-                print(acked)
             message = lines[3]
-            print("ack recieved " + ">>> " + message)
+            print(">>> Ack received: " + message + '\n')
             # Reset current_group
             current_group = ""
 
@@ -119,8 +107,13 @@ def clientListen(port):
 
             # Reset all private messages
             private_messages = []
+            print(local_table)
 
-        print(local_table)   # Show updated local table
+        if (current_group == ""):
+            print("\n>>> ", end="")
+        else:
+            print("\n>>> ({}) ".format(current_group), end="")
+
 
 def clientMode(user_name, server_ip, server_port, client_port):
 
@@ -141,21 +134,19 @@ def clientMode(user_name, server_ip, server_port, client_port):
     while True:
         global acked
         global current_group
+
         if (current_group == ""):
-            print(">>>", end="")
+            print("\n>>> ", end="")
         else:
-            print(">>> ({}) ".format(current_group), end="")
+            print("\n>>> ({}) ".format(current_group), end="")
         
         try:
             temp = input()
         except KeyboardInterrupt: # Silent leave
             to_send = "header:\n" + "dereg" + "\nport:\n" + str(client_port)
             client_socket.sendto(to_send.encode(), (server_ip, server_port))
-            print(">>> deregistration request sent: silent leave")
-            print(client_socket.fileno())
+            print(">>> deregistration request sent: silent leave\n")
             client_socket.close()
-            # sys.exit(0) # Client can no longer type inputs
-            print(client_socket.fileno())
             break
         
         input_list = temp.split()
@@ -163,7 +154,7 @@ def clientMode(user_name, server_ip, server_port, client_port):
         try:
             header = input_list[0]
         except:
-            print("\n>>>Invalid input")
+            print("\n>>> Invalid input\n")
             continue
     
         if header == "send":
@@ -175,7 +166,7 @@ def clientMode(user_name, server_ip, server_port, client_port):
             try:
                 target_user_name = input_list[1]
             except:
-                print("\n>>>Need to include username")
+                print("\n>>> Need to include username\n")
                 continue
 
             target_ip = ""
@@ -187,7 +178,7 @@ def clientMode(user_name, server_ip, server_port, client_port):
 
             # Verify target user name exists
             if (target_ip == "" and target_port == ""):
-                print(">>> Incorrect username provided")
+                print(">>> Incorrect username provided\n")
                 continue
 
             # Construct message
@@ -202,11 +193,9 @@ def clientMode(user_name, server_ip, server_port, client_port):
             # Try once to send message to the target client
             client_socket.sendto(to_send.encode(), (target_ip, int(target_port)))
             time.sleep(.5)
-            print("WOKE UP")
-            print(acked)
             if(acked[int(target_port)] != 1):
                 print(">>> [No ACK from {}, message not delivered]".format(target_user_name))
-                print("THE CLIENT DID NOT RECEIVE THE MESSAGE. IT IS OFFLINE")
+                print("THE CLIENT DID NOT RECEIVE THE MESSAGE. IT IS OFFLINE\n")
                 # Tell server to update tables
                 to_send = "header:\n" + "dereg" + "\nport:\n" + str(target_port)
                 client_socket.sendto(to_send.encode(), (server_ip, server_port))
@@ -216,7 +205,7 @@ def clientMode(user_name, server_ip, server_port, client_port):
             try:
                 target_user_name = input_list[1]
             except:
-                print("\n>>>Invalid input: need to include username to dereg")
+                print("\n>>> Invalid input: need to include username to dereg\n")
                 continue
 
             target_ip = ""
@@ -227,7 +216,7 @@ def clientMode(user_name, server_ip, server_port, client_port):
                     target_port = str(local_table[indx]['port'])
 
             if (target_ip == "" and target_port == ""):
-                print(">>>Incorrect username provided")
+                print(">>> Incorrect username provided\n")
                 continue
 
             to_send = "header:\n" + header + "\nport:\n" + str(target_port)
@@ -240,8 +229,6 @@ def clientMode(user_name, server_ip, server_port, client_port):
                 client_socket.sendto(to_send.encode(), (server_ip, server_port))
                 print(">>> deregistration request sent: notified leave")
                 time.sleep(.5)
-                print("WOKE UP")
-                print(acked)
                 if(acked[int(server_port)] == 1):
                     break
                 if(i <= 3 and acked[int(server_port)] != 1):
@@ -256,22 +243,20 @@ def clientMode(user_name, server_ip, server_port, client_port):
                     listen.join()  # TODO: How to close client listening socket?
                 break
             
-            print("Closing client socket")
-            print(client_socket.fileno())
+            print("Closing client socket\n")
             client_socket.close()
-            print(client_socket.fileno())
 
             break
 
         elif header == "create_group":
             if(current_group != ""):
-                print("Cannot create a new group while you are in a group")
+                print("Cannot create a new group while you are in a group\n")
                 continue
 
             try:
                 group_name = input_list[1]
             except:
-                print("\n>>> Invalid input: need to include group name to be created")
+                print(">> Invalid input: need to include group name to be created\n")
                 continue
             to_send = "header:\n" + header + "\nport:\n" + str(client_port) + "\ngroup_name:\n" + group_name + "\ncurrent_user:\n" + user_name
 
@@ -283,8 +268,6 @@ def clientMode(user_name, server_ip, server_port, client_port):
                 client_socket.sendto(to_send.encode(), (server_ip, server_port))
                 print(">>> request to create group sent")
                 time.sleep(.5)
-                print("WOKE UP")
-                print(acked)
                 if(i <= 3 and acked[int(server_port)] != 1):
                     print("THE SERVER DID NOT RECEIVE CREATE GROUP REQ. SENDING AGAIN")
                     continue
@@ -292,10 +275,8 @@ def clientMode(user_name, server_ip, server_port, client_port):
                     # Forced exit
                     print(">>> [Server not responding]")
                     print(">>> [Exiting]")
-                    print("Closing client socket")
-                    print(client_socket.fileno())
+                    print("Closing client socket\n")
                     client_socket.close()
-                    print(client_socket.fileno())
                     listen.join()  # TODO: How to close client listening socket?
                 break
 
@@ -315,8 +296,6 @@ def clientMode(user_name, server_ip, server_port, client_port):
                 client_socket.sendto(to_send.encode(), (server_ip, server_port))
                 print(">>> request to list all groups sent")
                 time.sleep(.5)
-                print("WOKE UP")
-                print(acked)
                 if(i <= 3 and acked[int(server_port)] != 1):
                     print("THE SERVER DID NOT RECEIVE LIST GROUP REQ. SENDING AGAIN")
                     continue
@@ -324,23 +303,21 @@ def clientMode(user_name, server_ip, server_port, client_port):
                     # Forced exit
                     print(">>> [Server not responding]")
                     print(">>> [Exiting]")
-                    print("Closing client socket")
-                    print(client_socket.fileno())
+                    print("Closing client socket\n")
                     client_socket.close()
-                    print(client_socket.fileno())
                     listen.join()  # TODO: How to close client listening socket?
                 break
 
 
         elif header == 'join_group':
             if(current_group != ""):
-                print("Cannot join another group while you are in a group")
+                print("Cannot join another group while you are in a group\n")
                 continue
 
             try:
                 group_name = input_list[1]
             except:
-                print("\n>>> Invalid input: need to include group name to join")
+                print(">>> Invalid input: need to include group name to join\n")
                 continue
             
             current_group = group_name
@@ -355,8 +332,6 @@ def clientMode(user_name, server_ip, server_port, client_port):
                 client_socket.sendto(to_send.encode(), (server_ip, server_port))
                 print(">>> request to join group sent")
                 time.sleep(.5)
-                print("WOKE UP")
-                print(acked)
                 if(i <= 3 and acked[int(server_port)] != 1):
                     print("THE SERVER DID NOT RECEIVE JOIN GROUP REQ. SENDING AGAIN")
                     continue
@@ -364,16 +339,14 @@ def clientMode(user_name, server_ip, server_port, client_port):
                     # Forced exit
                     print(">>> [Server not responding]")
                     print(">>> [Exiting]")
-                    print("Closing client socket")
-                    print(client_socket.fileno())
+                    print("Closing client socket\n")
                     client_socket.close()
-                    print(client_socket.fileno())
                     listen.join()  # TODO: How to close client listening socket?
                 break
 
         elif header == 'send_group':
             if(current_group == ""):
-                print("You are not in a group chat")
+                print("You are not in a group chat\n")
                 continue
 
             message = ""
@@ -389,8 +362,6 @@ def clientMode(user_name, server_ip, server_port, client_port):
                 print("\nTry {})".format(i+1))
                 client_socket.sendto(to_send.encode(), (server_ip, int(server_port)))
                 time.sleep(.5)
-                print("WOKE UP")
-                print(acked)
                 if(i <= 3 and acked[int(server_port)] != 1):
                     print(">>> [Message not delivered to server]")
                     continue
@@ -398,16 +369,14 @@ def clientMode(user_name, server_ip, server_port, client_port):
                     # Forced exit
                     print(">>> [Server not responding]")
                     print(">>> [Exiting]")
-                    print("Closing client socket")
-                    print(client_socket.fileno())
+                    print("Closing client socket\n")
                     client_socket.close()
-                    print(client_socket.fileno())
                     listen.join()  # TODO: How to close client listening socket?
                 break
  
         elif header == 'list_members':
             if(current_group == ""):
-                print("You are not in a group chat so you cannot see its members")
+                print("You are not in a group chat so you cannot see its members\n")
                 continue
 
             to_send = "header:\n" + header + "\nport:\n" + str(client_port) + "\ncurrent_user:\n" + user_name + '\ngroup_name:\n' + current_group
@@ -420,8 +389,6 @@ def clientMode(user_name, server_ip, server_port, client_port):
                 client_socket.sendto(to_send.encode(), (server_ip, server_port))
                 print(">>> request to list members in group sent")
                 time.sleep(.5)
-                print("WOKE UP")
-                print(acked)
                 if(i <= 3 and acked[int(server_port)] != 1):
                     print("THE SERVER DID NOT RECEIVE LIST MEMBERS IN GROUP REQ. SENDING AGAIN")
                     continue
@@ -429,16 +396,14 @@ def clientMode(user_name, server_ip, server_port, client_port):
                     # Forced exit
                     print(">>> [Server not responding]")
                     print(">>> [Exiting]")
-                    print("Closing client socket")
-                    print(client_socket.fileno())
+                    print("Closing client socket\n")
                     client_socket.close()
-                    print(client_socket.fileno())
                     listen.join()  # TODO: How to close client listening socket?
                 break
 
         elif header == "leave_group":
             if(current_group == ""):
-                print("You are not in a group chat so you cannot leave one")
+                print("You are not in a group chat so you cannot leave one\n")
                 continue
 
             to_send = "header:\n" + header + "\nport:\n" + str(client_port) + "\ncurrent_user:\n" + user_name + '\ngroup_name:\n' + current_group
@@ -451,8 +416,6 @@ def clientMode(user_name, server_ip, server_port, client_port):
                 client_socket.sendto(to_send.encode(), (server_ip, server_port))
                 print(">>> request to leave group sent")
                 time.sleep(.5)
-                print("WOKE UP")
-                print(acked)
                 if(i <= 3 and acked[int(server_port)] != 1):
                     print("THE SERVER DID NOT RECEIVE LEAVE GROUP REQ. SENDING AGAIN")
                     continue
@@ -460,13 +423,12 @@ def clientMode(user_name, server_ip, server_port, client_port):
                     # Forced exit
                     print(">>> [Server not responding]")
                     print(">>> [Exiting]")
-                    print("Closing client socket")
-                    print(client_socket.fileno())
+                    print("Closing client socket\n")
                     client_socket.close()
-                    print(client_socket.fileno())
                     listen.join()  # TODO: How to close client listening socket?
                 break
+
+            print(local_table)
+
         else:
-            print("Please input a valid request")
-        
-        print(local_table)   # Show updated local table
+            print(">>> Please input a valid request\n")
