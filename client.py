@@ -107,7 +107,6 @@ def clientListen(port):
 
             # Reset all private messages
             private_messages = []
-            print(local_table)
 
         if (current_group == ""):
             print("\n>>> ", end="")
@@ -427,8 +426,6 @@ def clientMode(user_name, server_ip, server_port, client_port):
                     client_socket.close()
                     listen.join()  # TODO: How to close client listening socket?
                 break
-
-            print(local_table)
 
         else:
             print(">>> Please input a valid request\n")
