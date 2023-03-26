@@ -21,7 +21,7 @@ def clientListen(port):
     global private_messages
     global acked
 
-    print(">>>Client now listening")
+    print(">>> Client now listening")
 
     # Need to declare a new socket bc socket is already being used to send
     listen_socket = socket(AF_INET, SOCK_DGRAM)
@@ -47,8 +47,7 @@ def clientListen(port):
                 acked[sender_address[1]] = 1
                 print(acked)
             message = lines[3]
-            print("ack recieved")
-            print(">>> " + message)
+            print("ack recieved " + ">>> " + message)
             # Previously set current_group to be value of a group that does not exist
             current_group = ""
         elif(header == 'update'):
@@ -74,7 +73,7 @@ def clientListen(port):
 
             ack = "Header:\nack\nMessage:\n[Message received by {}.]".format(recipient_name)
             listen_socket.sendto(ack.encode(), (original_sender_ip, original_sender_port))
-            print(">>> Sent the ack\n\n")
+            print(">>> Sent the ack\n")
         elif(header == 'dereg'):
             print(acked)
             print(sender_address[1])
@@ -121,6 +120,8 @@ def clientListen(port):
             # Reset all private messages
             private_messages = []
 
+        print(local_table)   # Show updated local table
+
 def clientMode(user_name, server_ip, server_port, client_port):
 
     # Create UDP socket
@@ -131,16 +132,15 @@ def clientMode(user_name, server_ip, server_port, client_port):
     create_table(user_name, '127.0.0.1', client_port) # Create local table
     client_socket.sendto(register_msg.encode(), (server_ip, server_port)) # Send registration request to server
 
+    print(local_table)
+
     # Multithreading
     listen = threading.Thread(target=clientListen, args=(client_port,))
     listen.start()
 
     while True:
         global acked
-        print("LOCAL TABLE")
-        print(local_table)   # Show updated local table
         global current_group
-        print("CURRENT_GROUP: " + current_group)
         if (current_group == ""):
             print(">>>", end="")
         else:
@@ -466,6 +466,7 @@ def clientMode(user_name, server_ip, server_port, client_port):
                     print(client_socket.fileno())
                     listen.join()  # TODO: How to close client listening socket?
                 break
-
         else:
             print("Please input a valid request")
+        
+        print(local_table)   # Show updated local table
