@@ -12,18 +12,21 @@ global group_list
 group_list = {}
 
 # Server response when there is a new registering client (ACK + updated table)
-def serverRegister(server_socket, target_addr, target_port):
+def serverRegister(server_socket, target_addr, target_port, user_name):
     # Send ack to current client that their registration req was received
     ack = "Header:\nack\nMessage:\n[Welcome, You are registered.]"
     server_socket.sendto(ack.encode(), (target_addr, target_port))  # Send ack
     # print(">>> Sent the ack\n\n")
+
+    # Append the newly registered client to the server's table
+    server_table[len(server_table)] = {'name': user_name, 'ip': target_addr, 'port': target_port, 'status': 'yes', 'mode': 'normal'}
 
     # Tell each client to update their local client tables
     update = "Header:\nupdate\nPayload:\n" + json.dumps(server_table)  # Convert dataframe to JSON
     for indx in server_table.keys():
         server_socket.sendto(update.encode(), (str(server_table[indx]['ip']), int(server_table[indx]['port'])))  # Send updated table
     print(">>>Broadcasted the updated table\n")
-    print(server_table)
+    # print(server_table)
 
 def serverDeregister(server_socket, target_addr, target_port):
     ack = "Header:\ndereg\nMessage:\n[You are Offline. Bye.]"
@@ -40,7 +43,7 @@ def serverDeregister(server_socket, target_addr, target_port):
     for indx in server_table.keys():
         server_socket.sendto(update.encode(), (str(server_table[indx]['ip']), int(server_table[indx]['port'])))  # Send updated table
     print(">>> Broadcasted the updated table\n")
-    print(server_table)
+    # print(server_table)
 
 # Server response (ACK only)
 def serverCheckGroup(server_socket, target_addr, target_port, group_name, client_name):
@@ -86,7 +89,7 @@ def serverJoinGroup(server_socket, target_addr, target_port, group_name, client_
     
     server_socket.sendto(ack.encode(), (target_addr, int(target_port)))
     # print(">>> Sent the ack\n\n")
-    print(server_table)
+    # print(server_table)
 
 def serverBroadcast(server_socket, sender_addr, sender_port, sender_name, group_name, message, server_ip, server_port):
     # send ack to original sender
@@ -133,7 +136,7 @@ def serverLeaveGroup(server_socket, target_addr, target_port, client_name, group
         if (server_table[indx]['ip'] == str(target_addr) and server_table[indx]['port'] == int(target_port)):
             server_table[indx]['mode'] = 'normal'
 
-    print(server_table)
+    # print(server_table)
 
     
 def serverMode(port):
@@ -173,11 +176,8 @@ def serverMode(port):
             client_ip = str(lines[5])
             client_port = int(lines[7])
 
-            # Append the newly registered client to the server's table
-            server_table[len(server_table)] = {'name': user_name, 'ip': client_ip, 'port': client_port, 'status': 'yes', 'mode': 'normal'}
-
             # Send ack to current client and update all local clients' tables
-            server_send = threading.Thread(target=serverRegister, args=(server_socket, client_address[0], client_port))
+            server_send = threading.Thread(target=serverRegister, args=(server_socket, client_address[0], client_port, user_name))
             server_send.start()
             print(">>> [Server table updated via new registration.]")
         elif header == 'dereg':
@@ -235,3 +235,5 @@ def serverMode(port):
             server_send.start()
         else:
             print("Please input a valid request to the server")
+
+        print(server_table)

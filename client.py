@@ -52,7 +52,7 @@ def clientListen(port):
             dict = json.loads(payload)
             local_table = dict
             print("[Client table updated.]")
-            print(local_table)
+            # print(local_table)
         elif(header == 'send'):
             original_sender_name = lines[3]
             recipient_name = lines[5]
@@ -154,6 +154,7 @@ def clientMode(user_name, server_ip, server_port, client_port):
             header = input_list[0]
         except:
             print("\n>>> Invalid input\n")
+            print(local_table)
             continue
     
         if header == "send":
@@ -429,3 +430,5 @@ def clientMode(user_name, server_ip, server_port, client_port):
 
         else:
             print(">>> Please input a valid request\n")
+
+        print(local_table)
