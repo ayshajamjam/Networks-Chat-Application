@@ -108,6 +108,8 @@ def clientListen(port):
             # Reset all private messages
             private_messages = []
 
+        print(local_table)
+
         if (current_group == ""):
             print("\n>>> ", end="")
         else:
@@ -430,5 +432,3 @@ def clientMode(user_name, server_ip, server_port, client_port):
 
         else:
             print(">>> Please input a valid request\n")
-
-        print(local_table)
