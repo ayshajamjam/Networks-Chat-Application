@@ -53,6 +53,11 @@ def clientListen(port):
             local_table = dict
             print("[Client table updated.]")
             # print(local_table)
+            if (current_group == ""):
+                print("\n>>> ", end="")
+            else:
+                print("\n>>> ({}) ".format(current_group), end="")
+
         elif(header == 'send'):
             original_sender_name = lines[3]
             recipient_name = lines[5]
@@ -70,6 +75,12 @@ def clientListen(port):
             ack = "Header:\nack\nMessage:\n[Message received by {}.]".format(recipient_name)
             listen_socket.sendto(ack.encode(), (original_sender_ip, original_sender_port))
             # print(">>> Sent the ack\n")
+
+            if (current_group == ""):
+                print("\n>>> ", end="")
+            else:
+                print("\n>>> ({}) ".format(current_group), end="")
+
         elif(header == 'dereg'):
             if(sender_address[1] in acked.keys() and acked[sender_address[1]] == 0):
                 acked[sender_address[1]] = 1
@@ -87,12 +98,16 @@ def clientListen(port):
             server_ip = lines[5]
             server_port = int(lines[7])
             print(message)
-            ack = "Header:\nack\nMessage:\n{}".format(message)
+            ack = "Header:\nack\nMessage:\n{}\nPort:\n{}".format(message, port)
             listen_socket.sendto(ack.encode(), (server_ip, server_port))
             # print("Sent the ack\n\n")
+            if (current_group == ""):
+                print("\n>>> ", end="")
+            else:
+                print("\n>>> ({}) ".format(current_group), end="")
         elif(header == 'list_members'):
             member = lines[3]
-            print(">>> " + member)
+            print("\n>>> " + member)
         elif(header == 'leave'):
             if(sender_address[1] in acked.keys() and acked[sender_address[1]] == 0):
                 acked[sender_address[1]] = 1
@@ -108,12 +123,15 @@ def clientListen(port):
             # Reset all private messages
             private_messages = []
 
-        print(local_table)
+            if (current_group == ""):
+                print("\n>>> ", end="")
+            else:
+                print("\n>>> ({}) ".format(current_group), end="")
 
-        if (current_group == ""):
-            print("\n>>> ", end="")
-        else:
-            print("\n>>> ({}) ".format(current_group), end="")
+        # if (current_group == ""):
+        #     print("\n>>> ", end="")
+        # else:
+        #     print("\n>>> ({}) ".format(current_group), end="")
 
 
 def clientMode(user_name, server_ip, server_port, client_port):
@@ -125,8 +143,6 @@ def clientMode(user_name, server_ip, server_port, client_port):
     register_msg = "header:\n" + "register\n" + "username:\n" + user_name + "\nip:\n" + '127.0.0.1\n' + "port:\n" + str(client_port)
     create_table(user_name, '127.0.0.1', client_port) # Create local table
     client_socket.sendto(register_msg.encode(), (server_ip, server_port)) # Send registration request to server
-
-    print(local_table)
 
     # Multithreading
     listen = threading.Thread(target=clientListen, args=(client_port,))

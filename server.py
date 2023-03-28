@@ -4,12 +4,15 @@ import threading
 import sys
 import ipaddress
 import json
+import time
 
 global server_table
 server_table = {}
 
 global group_list
 group_list = {}
+
+acked = {}
 
 # Server response when there is a new registering client (ACK + updated table)
 def serverRegister(server_socket, target_addr, target_port, user_name):
@@ -25,8 +28,9 @@ def serverRegister(server_socket, target_addr, target_port, user_name):
     update = "Header:\nupdate\nPayload:\n" + json.dumps(server_table)  # Convert dataframe to JSON
     for indx in server_table.keys():
         server_socket.sendto(update.encode(), (str(server_table[indx]['ip']), int(server_table[indx]['port'])))  # Send updated table
-    print(">>>Broadcasted the updated table\n")
-    # print(server_table)
+    print(">>> Broadcasted the updated table")
+    print(server_table)
+    print('\n')
 
 def serverDeregister(server_socket, target_addr, target_port):
     ack = "Header:\ndereg\nMessage:\n[You are Offline. Bye.]"
@@ -43,7 +47,8 @@ def serverDeregister(server_socket, target_addr, target_port):
     for indx in server_table.keys():
         server_socket.sendto(update.encode(), (str(server_table[indx]['ip']), int(server_table[indx]['port'])))  # Send updated table
     print(">>> Broadcasted the updated table\n")
-    # print(server_table)
+    print(server_table)
+    print('\n')
 
 # Server response (ACK only)
 def serverCheckGroup(server_socket, target_addr, target_port, group_name, client_name):
@@ -58,6 +63,9 @@ def serverCheckGroup(server_socket, target_addr, target_port, group_name, client
     server_socket.sendto(ack.encode(), (target_addr, int(target_port)))
     # print(">>> Sent the ack\n\n")
 
+    print(server_table)
+    print('\n')
+
 def serverListGroups(server_socket, target_addr, target_port, client_name):
     ack = "Header:\nack\nMessage:\n[Available group chats:]"
     server_socket.sendto(ack.encode(), (target_addr, int(target_port)))
@@ -68,7 +76,9 @@ def serverListGroups(server_socket, target_addr, target_port, client_name):
         print(">>> " + group)
         li = "Header:\nlist_groups\nMessage:\n{}".format(group)
         server_socket.sendto(li.encode(), (target_addr, int(target_port)))
-
+    
+    print(server_table)
+    print('\n')
 
 def serverJoinGroup(server_socket, target_addr, target_port, group_name, client_name):
     
@@ -89,7 +99,8 @@ def serverJoinGroup(server_socket, target_addr, target_port, group_name, client_
     
     server_socket.sendto(ack.encode(), (target_addr, int(target_port)))
     # print(">>> Sent the ack\n\n")
-    # print(server_table)
+    print(server_table)
+    print('\n')
 
 def serverBroadcast(server_socket, sender_addr, sender_port, sender_name, group_name, message, server_ip, server_port):
     # send ack to original sender
@@ -109,7 +120,27 @@ def serverBroadcast(server_socket, sender_addr, sender_port, sender_name, group_
     for indx in server_table.keys():
         if(not ((str(server_table[indx]['ip']) == str(sender_addr)) and (int(server_table[indx]['port']) == int(sender_port))) and str(server_table[indx]['name']) in clients_in_group):
             server_socket.sendto(full_msg.encode(), (str(server_table[indx]['ip']), int(server_table[indx]['port'])))
+            
+            # Maintain port numbers of group members
+            acked[str(server_table[indx]['name']), int(server_table[indx]['port'])] = 0
 
+    time.sleep(.5)
+
+    # Look through each client which was broadcasted the message
+    for client in acked.keys():
+        if(acked[client] != 1):
+            print(">>> [Client {} not responsive, removed from group {}]".format(client[0], group_name))
+
+            # Remove client from the group
+            group_list[group_name].remove(client[0])
+
+            # Update the client's mode to normal
+            for indx in server_table.keys():
+                if (server_table[indx]['port'] == int(client[1])):
+                    server_table[indx]['mode'] = 'normal'
+    
+    print(server_table)
+    print('\n')
 
 def serverListMembers(server_socket, target_addr, target_port, client_name, group_name):
     print(">>> [Client {} requested listing members of group {}:]".format(client_name, group_name))
@@ -121,6 +152,9 @@ def serverListMembers(server_socket, target_addr, target_port, client_name, grou
         print(">>> {}".format(client))
         li = "Header:\nlist_members\nMessage:\n({}) {}".format(group_name, client)
         server_socket.sendto(li.encode(), (target_addr, int(target_port)))
+    
+    print(server_table)
+    print('\n')
 
 def serverLeaveGroup(server_socket, target_addr, target_port, client_name, group_name):
     print(">>> [Client {} left group {}]".format(client_name, group_name))
@@ -136,8 +170,8 @@ def serverLeaveGroup(server_socket, target_addr, target_port, client_name, group
         if (server_table[indx]['ip'] == str(target_addr) and server_table[indx]['port'] == int(target_port)):
             server_table[indx]['mode'] = 'normal'
 
-    # print(server_table)
-
+    print(server_table)
+    print('\n')
     
 def serverMode(port):
     # Create UDP socket
@@ -218,6 +252,17 @@ def serverMode(port):
             server_send.start()
         elif header == 'ack':
             message = lines[3]
+            client_port = int(lines[5])
+
+            user_name = ""
+
+            for indx in server_table.keys():
+                if(server_table[indx]['port'] == client_port):
+                    user_name = server_table[indx]['name']
+
+            if((user_name, client_port) in acked.keys() and acked[(user_name, client_port)] == 0):
+                acked[(user_name, client_port)] = 1
+            
             print("ack recieved")
         elif header == 'list_members':
             client_port = lines[3]
@@ -235,5 +280,3 @@ def serverMode(port):
             server_send.start()
         else:
             print("Please input a valid request to the server")
-
-        print(server_table)
