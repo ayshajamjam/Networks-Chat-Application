@@ -13,8 +13,8 @@
 
 ## Libraries
 
-**threading**: multithreading (sending and recieving simultaneously)
-**sys**: usedful for command-line
+- **threading**: multithreading (sending and recieving simultaneously)
+- **sys**: usedful for command-line
 
 ## Description of Project:
 
