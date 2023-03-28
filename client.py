@@ -208,6 +208,9 @@ def clientMode(user_name, server_ip, server_port, client_port):
 
         elif header == "dereg":   # notified leave
             # Verify target user name exists
+
+            user_name = ""
+
             try:
                 target_user_name = input_list[1]
             except:
@@ -218,6 +221,8 @@ def clientMode(user_name, server_ip, server_port, client_port):
             target_ip = ""
             target_port = ""
             for indx in local_table:
+                if int(local_table[indx]['port']) == int(client_port):
+                    user_name = local_table[indx]['name']
                 if local_table[indx]['name'] == target_user_name:
                     target_ip = local_table[indx]['ip']
                     target_port = str(local_table[indx]['port'])
@@ -227,11 +232,15 @@ def clientMode(user_name, server_ip, server_port, client_port):
                 print_brackets(current_group)
                 continue
 
-            to_send = "header:\n" + header + "\nport:\n" + str(target_port)
+            # Deregestering a different user
+            if(user_name != target_user_name):
+                to_send = "header:\n" + header + "\nport:\n" + str(target_port)
+                client_socket.sendto(to_send.encode(), (server_ip, server_port))
+                continue
 
             acked = {int(server_port): 0}
+            to_send = "header:\n" + header + "\nport:\n" + str(target_port)
 
-            
             # Try 5 times to ask the server to dereg
             for i in range(6):
                 print("\nTry {})".format(i+1))
