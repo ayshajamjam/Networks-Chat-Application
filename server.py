@@ -14,12 +14,21 @@ group_list = {}
 
 acked = {}
 
+names_used = set()
+
 # Server response when there is a new registering client (ACK + updated table)
 def serverRegister(server_socket, target_addr, target_port, user_name):
     # Append the newly registered client to the server's table
-    server_table[len(server_table)] = {'name': user_name, 'ip': target_addr, 'port': target_port, 'status': 'yes', 'mode': 'normal'}
-
     time.sleep(.5)
+
+    if(user_name in names_used):
+        ack = "Header:\nack\nMessage:\n[Cannot register with a name already used.]"
+        server_socket.sendto(ack.encode(), (target_addr, target_port))  # Send ack
+        return
+
+    names_used.add(user_name)
+    
+    server_table[len(server_table)] = {'name': user_name, 'ip': target_addr, 'port': target_port, 'status': 'yes', 'mode': 'normal'}
 
     # Tell each client to update their local client tables
     update = "Header:\nupdate\nPayload:\n" + json.dumps(server_table)  # Convert dataframe to JSON
@@ -108,6 +117,7 @@ def serverJoinGroup(server_socket, target_addr, target_port, group_name, client_
     print('\n')
 
 def serverBroadcast(server_socket, sender_addr, sender_port, sender_name, group_name, message, server_ip, server_port):
+    global acked
     # send ack to original sender
     ack = "Header:\nack\nMessage:\n[Message received by Server.]"
     server_socket.sendto(ack.encode(), (sender_addr, int(sender_port)))
@@ -144,6 +154,8 @@ def serverBroadcast(server_socket, sender_addr, sender_port, sender_name, group_
                 if (server_table[indx]['port'] == int(client[1])):
                     server_table[indx]['mode'] = 'normal'
     
+    acked = {}
+
     print(server_table)
     print('\n')
 
