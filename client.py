@@ -70,9 +70,8 @@ def clientListen(port):
 
             if(current_group != ""):    # Case: sending user is in a group chat
                 # Store private messages in a list
-                # print(">>> RECIEVED PRIVATE MESSAGE WHILE IN GC; exit to see")
+                print(">>> RECIEVED PRIVATE MESSAGE WHILE IN GC; exit to see")
                 private_messages.append(str(original_sender_name + ": " + message))
-                continue
             else:                       # Case: sending user is NOT in a group chat
                 print('\n>>> ' + original_sender_name + ": " + message)
 
@@ -219,8 +218,6 @@ def clientMode(user_name, server_ip, server_port, client_port):
             target_ip = ""
             target_port = ""
             for indx in local_table:
-                if int(local_table[indx]['port']) == int(client_port):
-                    user_name = local_table[indx]['name']
                 if local_table[indx]['name'] == target_user_name:
                     target_ip = local_table[indx]['ip']
                     target_port = str(local_table[indx]['port'])
@@ -232,12 +229,9 @@ def clientMode(user_name, server_ip, server_port, client_port):
 
             to_send = "header:\n" + header + "\nport:\n" + str(target_port)
 
-            if(target_user_name != user_name):
-                client_socket.sendto(to_send.encode(), (server_ip, server_port))
-                continue
-
             acked = {int(server_port): 0}
 
+            
             # Try 5 times to ask the server to dereg
             for i in range(6):
                 print("\nTry {})".format(i+1))
