@@ -77,7 +77,7 @@ def clientListen(port):
             ack = "Header:\nack\nMessage:\n[Message received by {}.]".format(recipient_name)
             listen_socket.sendto(ack.encode(), (original_sender_ip, original_sender_port))
             # print(">>> Sent the ack\n")
-            continue
+            
 
         elif(header == 'dereg'):
             if(sender_address[1] in acked.keys() and acked[sender_address[1]] == 0):
@@ -260,7 +260,7 @@ def clientMode(user_name, server_ip, server_port, client_port):
                     listen.join()
                 break
             
-            print("Closing client socket\n")
+            # print("Closing client socket\n")
             client_socket.close()
 
             break
