@@ -16,13 +16,10 @@ acked = {}
 
 # Server response when there is a new registering client (ACK + updated table)
 def serverRegister(server_socket, target_addr, target_port, user_name):
-    # Send ack to current client that their registration req was received
-    ack = "Header:\nack\nMessage:\n[Welcome, You are registered.]"
-    server_socket.sendto(ack.encode(), (target_addr, target_port))  # Send ack
-    # print(">>> Sent the ack\n\n")
-
     # Append the newly registered client to the server's table
     server_table[len(server_table)] = {'name': user_name, 'ip': target_addr, 'port': target_port, 'status': 'yes', 'mode': 'normal'}
+
+    time.sleep(.5)
 
     # Tell each client to update their local client tables
     update = "Header:\nupdate\nPayload:\n" + json.dumps(server_table)  # Convert dataframe to JSON
@@ -31,6 +28,11 @@ def serverRegister(server_socket, target_addr, target_port, user_name):
     print(">>> Broadcasted the updated table")
     print(server_table)
     print('\n')
+
+    # Send ack to current client that their registration req was received
+    ack = "Header:\nack\nMessage:\n[Welcome, You are registered.]"
+    server_socket.sendto(ack.encode(), (target_addr, target_port))  # Send ack
+    # print(">>> Sent the ack\n\n")
 
 def serverDeregister(server_socket, target_addr, target_port):
     ack = "Header:\ndereg\nMessage:\n[You are Offline. Bye.]"
@@ -67,9 +69,12 @@ def serverCheckGroup(server_socket, target_addr, target_port, group_name, client
     print('\n')
 
 def serverListGroups(server_socket, target_addr, target_port, client_name):
-    ack = "Header:\nack\nMessage:\n[Available group chats:]"
+
+    ack = "Header:\nack\nMessage:\n[Request for available group chats received.]"
     server_socket.sendto(ack.encode(), (target_addr, int(target_port)))
-    # print(">>> Sent the ack\n\n")
+
+    ack_group = "Header:\nlist_groups\nMessage:\n[Available group chats:]"
+    server_socket.sendto(ack_group.encode(), (target_addr, int(target_port)))
 
     print(">>> [Client {} requested listing groups, current groups:]".format(client_name))
     for group in group_list.keys():
@@ -143,11 +148,14 @@ def serverBroadcast(server_socket, sender_addr, sender_port, sender_name, group_
     print('\n')
 
 def serverListMembers(server_socket, target_addr, target_port, client_name, group_name):
-    print(">>> [Client {} requested listing members of group {}:]".format(client_name, group_name))
-    ack = "Header:\nack\nMessage:\n[Members in the group {}:]".format(group_name)
+    
+    ack = "Header:\nack\nMessage:\n[Request for members in the group received]".format(group_name)
     server_socket.sendto(ack.encode(), (target_addr, int(target_port)))
-    # print(">>> Sent the ack\n\n")
 
+    ack_group = "Header:\nlist_members\nMessage:\n[Members in the group {}:]".format(group_name)
+    server_socket.sendto(ack_group.encode(), (target_addr, int(target_port)))
+
+    print(">>> [Client {} requested listing members of group {}:]".format(client_name, group_name))
     for client in group_list[group_name]:
         print(">>> {}".format(client))
         li = "Header:\nlist_members\nMessage:\n({}) {}".format(group_name, client)
