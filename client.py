@@ -70,7 +70,6 @@ def clientListen(port):
 
             if(current_group != ""):    # Case: sending user is in a group chat
                 # Store private messages in a list
-                print(">>> RECIEVED PRIVATE MESSAGE WHILE IN GC; exit to see")
                 private_messages.append(str(original_sender_name + ": " + message))
             else:                       # Case: sending user is NOT in a group chat
                 print('\n>>> ' + original_sender_name + ": " + message)
@@ -78,6 +77,7 @@ def clientListen(port):
             ack = "Header:\nack\nMessage:\n[Message received by {}.]".format(recipient_name)
             listen_socket.sendto(ack.encode(), (original_sender_ip, original_sender_port))
             # print(">>> Sent the ack\n")
+            continue
 
         elif(header == 'dereg'):
             if(sender_address[1] in acked.keys() and acked[sender_address[1]] == 0):
